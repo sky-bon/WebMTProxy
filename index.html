@@ -19,19 +19,19 @@
         body {
             background-color: #0d1117;
             color: #c9d1d9;
-            /* Основной шрифт для всего тела - Commissioner */
             font-family: 'Commissioner', sans-serif;
             line-height: 1.5;
-            padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 20px;
         }
 
         .container {
             max-width: 1000px;
             width: 100%;
+            flex: 1; /* занимает всё доступное место, прижимая footer вниз */
         }
 
         h1 {
@@ -42,7 +42,6 @@
             border-bottom: 2px solid #30363d;
             padding-bottom: 10px;
             text-transform: uppercase;
-            /* Заголовок тоже Commissioner (жирный) */
             font-family: 'Commissioner', sans-serif;
         }
 
@@ -50,7 +49,6 @@
             margin: 15px 0;
             font-size: 1rem;
             color: #8b949e;
-            /* Описание - Commissioner */
             font-family: 'Commissioner', sans-serif;
         }
 
@@ -61,7 +59,6 @@
             border: 1px solid #30363d;
             font-size: 1rem;
             color: #8b949e;
-            /* Статус делаем моноширинным (IBM Plex Mono) */
             font-family: 'IBM Plex Mono', monospace;
         }
 
@@ -69,7 +66,6 @@
             margin: 25px 0;
         }
 
-        /* Стиль для каждой ссылки (без скруглений) */
         #links p {
             margin-bottom: 8px;
         }
@@ -84,8 +80,7 @@
             font-size: 0.95rem;
             word-break: break-all;
             transition: background-color 0.2s ease;
-            border-radius: 0; /* Убрали скругления */
-            /* Ссылки - моноширинный IBM Plex Mono */
+            border-radius: 0;
             font-family: 'IBM Plex Mono', monospace;
         }
 
@@ -115,6 +110,30 @@
             border-bottom-color: #8b949e;
         }
 
+        /* Стили подвала */
+        footer {
+            width: 100%;
+            max-width: 1000px;
+            margin: 30px auto 10px;
+            padding: 15px 20px 10px;
+            text-align: center;
+            color: #6e7681;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9rem;
+            border-top: 1px solid #30363d;
+        }
+
+        footer a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px solid #6e7681;
+        }
+
+        footer a:hover {
+            color: #58a6ff;
+            border-bottom-color: #58a6ff;
+        }
+
         /* Адаптация для мобильных */
         @media (max-width: 600px) {
             body {
@@ -132,6 +151,11 @@
 
             #status {
                 padding: 10px;
+            }
+
+            footer {
+                padding: 10px 12px;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -152,7 +176,12 @@
         </div>
     </div>
 
+    <footer>
+        <span><a href="https://google.com" target="_blank" rel="noopener noreferrer">автор</a> • <span id="update-time">загрузка...</span></span>
+    </footer>
+
     <script>
+        // === Функция загрузки прокси ===
         function loadProxies() {
             const statusDiv = document.getElementById('status');
             const linksDiv = document.getElementById('links');
@@ -179,12 +208,11 @@
                         return;
                     }
 
-                    // *** ИСПРАВЛЕНО: правильное начало ссылки ***
+                    // Фильтруем только ссылки на прокси
                     const proxyLines = lines.filter(line => line.startsWith('https://t.me/proxy?'));
 
                     if (proxyLines.length === 0) {
                         statusDiv.innerHTML = 'Не найдено ссылок на прокси.';
-                        // Для отладки можно посмотреть в консоль
                         console.log('Первые строки файла (для проверки):', lines.slice(0, 3));
                         fallbackDiv.style.display = 'block';
                         return;
@@ -219,8 +247,44 @@
                 });
         }
 
+        // === Функция получения времени последнего коммита из репозитория-источника ===
+        function fetchLastCommitTime() {
+            const updateTimeSpan = document.getElementById('update-time');
+            fetch('https://api.github.com/repos/SoliSpirit/mtproto/commits?per_page=1')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const commitDate = data[0].commit.committer.date;
+                        const date = new Date(commitDate);
+                        // Форматируем: день.месяц.год часы:минуты
+                        const formatted = date.toLocaleString('ru', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }).replace(',', '');
+                        updateTimeSpan.textContent = formatted;
+                    } else {
+                        updateTimeSpan.textContent = 'неизвестно';
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка получения времени коммита:', error);
+                    updateTimeSpan.textContent = 'неизвестно';
+                });
+        }
+
+        // Запускаем загрузку прокси и времени последнего коммита
         loadProxies();
-        // Обновление каждые 10 минут (чтобы данные были свежими)
+        fetchLastCommitTime();
+
+        // Обновляем прокси каждые 10 минут (время коммита при этом не обновляем, чтобы меньше грузить API)
         setInterval(loadProxies, 10 * 60 * 1000);
     </script>
 </body>
