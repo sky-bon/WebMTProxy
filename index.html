@@ -31,7 +31,7 @@
         .container {
             max-width: 1000px;
             width: 100%;
-            flex: 1; /* занимает всё доступное место, прижимая footer вниз */
+            flex: 1;
         }
 
         h1 {
@@ -62,15 +62,94 @@
             font-family: 'IBM Plex Mono', monospace;
         }
 
-        #links {
+        /* Аккордеон */
+        .accordion {
             margin: 25px 0;
         }
 
-        #links p {
-            margin-bottom: 8px;
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            font-family: 'IBM Plex Mono', monospace;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+            border: 1px solid #ffffff;
+            background-color: #161b22;
         }
 
-        #links a {
+        .accordion-header:hover {
+            background-color: #1f2937;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            font-weight: 600;
+        }
+
+        .separator {
+            color: #6e7681;
+        }
+
+        .author-link {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px solid #6e7681;
+        }
+
+        .author-link:hover {
+            color: #58a6ff;
+            border-bottom-color: #58a6ff;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .update-time {
+            color: #6e7681; /* бледный цвет */
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .proxy-count {
+            color: #6e7681; /* бледный цвет */
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .accordion-header .arrow {
+            transition: transform 0.3s ease;
+            font-size: 1.5rem;
+            line-height: 1;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .accordion-header.active .arrow {
+            transform: rotate(90deg);
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 1px 20px 20px 20px;
+        }
+
+        .accordion-content.show {
+            display: block;
+        }
+
+        /* Ссылки внутри аккордеона */
+        .proxy-link {
             display: block;
             background: #161b22;
             border: 1px solid #30363d;
@@ -82,14 +161,15 @@
             transition: background-color 0.2s ease;
             border-radius: 0;
             font-family: 'IBM Plex Mono', monospace;
+            margin-top: 8px;
         }
 
-        #links a:hover {
+        .proxy-link:hover {
             background: #1f2937;
             border-color: #3b82f6;
         }
 
-        #links a:visited {
+        .proxy-link:visited {
             color: #8b949e;
             border-color: #2d3748;
         }
@@ -110,7 +190,7 @@
             border-bottom-color: #8b949e;
         }
 
-        /* Стили подвала */
+        /* Подвал */
         footer {
             width: 100%;
             max-width: 1000px;
@@ -123,17 +203,6 @@
             border-top: 1px solid #30363d;
         }
 
-        footer a {
-            color: inherit;
-            text-decoration: none;
-            border-bottom: 1px solid #6e7681;
-        }
-
-        footer a:hover {
-            color: #58a6ff;
-            border-bottom-color: #58a6ff;
-        }
-
         /* Адаптация для мобильных */
         @media (max-width: 600px) {
             body {
@@ -144,9 +213,23 @@
                 font-size: 1.5rem;
             }
 
-            #links a {
+            .accordion-header {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+
+            .header-left {
+                gap: 5px;
+            }
+
+            .proxy-link {
                 padding: 10px 12px;
                 font-size: 0.85rem;
+                margin-top: 6px;
+            }
+
+            .accordion-content {
+                padding: 1px 15px 15px 15px;
             }
 
             #status {
@@ -157,6 +240,10 @@
                 padding: 10px 12px;
                 font-size: 0.8rem;
             }
+
+            .header-right {
+                gap: 8px;
+            }
         }
     </style>
 </head>
@@ -164,104 +251,101 @@
     <div class="container">
         <h1>MTProto прокси для Telegram</h1>
         <div class="description">
-            Список обновляется автоматически каждые 12 часов.<br>
-            Нажмите на ссылку, чтобы открыть её в Telegram.
+            Нажмите на заголовок, чтобы раскрыть список прокси.
         </div>
 
-        <div id="status">Загрузка списка прокси...</div>
-        <div id="links"></div>
+        <div id="status">Загрузка списков прокси...</div>
+
+        <!-- Контейнер для всех аккордеонов -->
+        <div id="accordion-container"></div>
 
         <div class="fallback" id="fallback" style="display: none;">
-            <a href="https://github.com/SoliSpirit/mtproto/blob/master/all_proxies.txt" target="_blank">Посмотреть список в репозитории</a>
+            <a href="#" target="_blank">Посмотреть списки в репозиториях</a>
         </div>
     </div>
 
     <footer>
-        <span><span>original </span><a href="https://github.com/SoliSpirit/mtproto/blob/master/README_RU.md" target="_blank" rel="noopener noreferrer">SoliSpirit</a> • <span id="update-time">загрузка...</span></span>
+        creator sky bon
     </footer>
 
     <script>
-        // === Функция загрузки прокси ===
-        function loadProxies() {
-            const statusDiv = document.getElementById('status');
-            const linksDiv = document.getElementById('links');
-            const fallbackDiv = document.getElementById('fallback');
+        // ==================== НАСТРОЙКИ ====================
+        const sources = [
+            {
+                title: '🇷🇺 RU Сегмент (Top Tier)',
+                authorName: 'kort0881',
+                authorUrl: 'https://github.com/kort0881/telegram-proxy-collector',
+                sourceUrl: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt',
+            },
+            {
+                title: '🇪🇺 EU / Global',
+                authorName: 'kort0881',
+                authorUrl: 'https://github.com/kort0881/telegram-proxy-collector',
+                sourceUrl: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_eu.txt',
+            },
+            {
+                title: '🌍 Все прокси',
+                authorName: 'kort0881',
+                authorUrl: 'https://github.com/kort0881/telegram-proxy-collector',
+                sourceUrl: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_all.txt',
+            },
+            {
+                title: '🌐 MTProto прокси',
+                authorName: 'SoliSpirit',
+                authorUrl: 'https://github.com/SoliSpirit/mtproto/blob/master/README_RU.md',
+                sourceUrl: 'https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt',
+            },
+            {
+                title: 'All',
+                authorName: 'mrKamanov',
+                authorUrl: 'https://github.com/mrKamanov/mtproto',
+                sourceUrl: 'https://raw.githubusercontent.com/mrKamanov/mtproto/refs/heads/main/top20_mtproto_russia.txt',
+            },
+            {
+                title: 'All',
+                authorName: 'Argh94',
+                authorUrl: 'https://github.com/Argh94/Proxy-List',
+                sourceUrl: 'https://raw.githubusercontent.com/Argh94/Proxy-List/refs/heads/main/MTProto.txt',
+            },
 
-            linksDiv.innerHTML = '';
-            fallbackDiv.style.display = 'none';
+        ];
 
-            fetch('https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Ошибка HTTP: ${response.status}`);
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    const lines = data.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0);
-
-                    if (lines.length === 0) {
-                        statusDiv.innerHTML = 'Список прокси пуст.';
-                        fallbackDiv.style.display = 'block';
-                        return;
-                    }
-
-                    // Фильтруем только ссылки на прокси
-                    const proxyLines = lines.filter(line => line.startsWith('https://t.me/proxy?'));
-
-                    if (proxyLines.length === 0) {
-                        statusDiv.innerHTML = 'Не найдено ссылок на прокси.';
-                        console.log('Первые строки файла (для проверки):', lines.slice(0, 3));
-                        fallbackDiv.style.display = 'block';
-                        return;
-                    }
-
-                    statusDiv.innerHTML = `Загружено ${proxyLines.length} прокси (обновление каждые 12 часов)`;
-
-                    proxyLines.forEach(line => {
-                        const p = document.createElement('p');
-                        const a = document.createElement('a');
-                        a.href = line;
-                        a.target = '_blank';
-                        a.rel = 'noopener noreferrer';
-
-                        // Сокращаем отображение для длинных ссылок
-                        if (line.length > 70) {
-                            const shortLine = line.substring(0, 45) + '...' + line.substring(line.length - 25);
-                            a.textContent = shortLine;
-                            a.title = line;
-                        } else {
-                            a.textContent = line;
-                        }
-
-                        p.appendChild(a);
-                        linksDiv.appendChild(p);
-                    });
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки:', error);
-                    statusDiv.innerHTML = `Не удалось загрузить список прокси.<br><small>${error.message}</small>`;
-                    fallbackDiv.style.display = 'block';
-                });
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        function extractGitHubRepoFromUrl(url) {
+            try {
+                const parsed = new URL(url);
+                const pathParts = parsed.pathname.split('/');
+                if (pathParts.length >= 3 && parsed.hostname === 'raw.githubusercontent.com') {
+                    return { owner: pathParts[1], repo: pathParts[2] };
+                }
+            } catch (e) {
+                console.warn('Не удалось разобрать URL для API:', url);
+            }
+            return null;
         }
 
-        // === Функция получения времени последнего коммита из репозитория-источника ===
-        function fetchLastCommitTime() {
-            const updateTimeSpan = document.getElementById('update-time');
-            fetch('https://api.github.com/repos/SoliSpirit/mtproto/commits?per_page=1')
+        function fetchCommitTimeForSource(source, timeElement) {
+            let apiUrl = source.apiUrl;
+            if (!apiUrl) {
+                const repoInfo = extractGitHubRepoFromUrl(source.sourceUrl);
+                if (repoInfo) {
+                    apiUrl = `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/commits?per_page=1`;
+                } else {
+                    console.warn('Не удалось определить API для', source.title);
+                    timeElement.textContent = 'неизвестно';
+                    return;
+                }
+            }
+
+            fetch(apiUrl)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return response.json();
                 })
                 .then(data => {
                     if (data && data.length > 0) {
                         const commitDate = data[0].commit.committer.date;
                         const date = new Date(commitDate);
-                        // Форматируем: день.месяц.год часы:минуты
                         const formatted = date.toLocaleString('ru', {
                             day: '2-digit',
                             month: '2-digit',
@@ -269,23 +353,228 @@
                             hour: '2-digit',
                             minute: '2-digit'
                         }).replace(',', '');
-                        updateTimeSpan.textContent = formatted;
+                        timeElement.textContent = formatted;
                     } else {
-                        updateTimeSpan.textContent = 'неизвестно';
+                        timeElement.textContent = 'неизвестно';
                     }
                 })
                 .catch(error => {
-                    console.error('Ошибка получения времени коммита:', error);
-                    updateTimeSpan.textContent = 'неизвестно';
+                    console.error('Ошибка получения времени коммита для', source.title, error);
+                    timeElement.textContent = 'неизвестно';
                 });
         }
 
-        // Запускаем загрузку прокси и времени последнего коммита
-        loadProxies();
-        fetchLastCommitTime();
+        // Универсальная функция извлечения прокси из текста любого формата
+        function extractProxyLinksFromText(text) {
+            const lines = text.split('\n');
+            const proxySet = new Set();
 
-        // Обновляем прокси каждые 10 минут (время коммита при этом не обновляем, чтобы меньше грузить API)
-        setInterval(loadProxies, 10 * 60 * 1000);
+            const proxyRegex = /(?:tg:\/\/proxy\?|https:\/\/t\.me\/proxy\?)[^\s<>"']+/g;
+
+            lines.forEach(line => {
+                const matches = line.match(proxyRegex);
+                if (matches) {
+                    matches.forEach(match => {
+                        if (match.includes('server=') || match.includes('port=')) {
+                            let cleanLink = match;
+                            if (cleanLink.startsWith('https://t.me/proxy?')) {
+                                cleanLink = cleanLink.replace('https://t.me/proxy?', 'tg://proxy?');
+                            }
+                            proxySet.add(cleanLink);
+                        }
+                    });
+                }
+            });
+
+            return Array.from(proxySet);
+        }
+
+        // Загружает прокси для одного источника, возвращает промис с результатом
+        function loadSourceProxies(source, index) {
+            return fetch(source.sourceUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
+                    return response.text();
+                })
+                .then(data => {
+                    const proxyLinks = extractProxyLinksFromText(data);
+                    return {
+                        index: index,
+                        source: source,
+                        proxyLinks: proxyLinks,
+                        error: null
+                    };
+                })
+                .catch(error => {
+                    console.error(`Ошибка загрузки для источника ${source.title}:`, error);
+                    return {
+                        index: index,
+                        source: source,
+                        proxyLinks: [],
+                        error: error.message
+                    };
+                });
+        }
+
+        function createAccordion(source, proxyLines, container, errorMsg = null) {
+            const accordionDiv = document.createElement('div');
+            accordionDiv.className = 'accordion';
+
+            const header = document.createElement('div');
+            header.className = 'accordion-header';
+
+            // Левая часть заголовка (только название и автор)
+            const leftSpan = document.createElement('span');
+            leftSpan.className = 'header-left';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'title';
+            titleSpan.textContent = source.title;
+
+            const sep1 = document.createElement('span');
+            sep1.className = 'separator';
+            sep1.textContent = '•';
+
+            const authorLink = document.createElement('a');
+            authorLink.href = source.authorUrl;
+            authorLink.target = '_blank';
+            authorLink.className = 'author-link';
+            authorLink.textContent = source.authorName;
+
+            leftSpan.appendChild(titleSpan);
+            leftSpan.appendChild(sep1);
+            leftSpan.appendChild(authorLink);
+
+            // Правая часть: дата, счётчик, стрелка
+            const rightSpan = document.createElement('span');
+            rightSpan.className = 'header-right';
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'update-time';
+            timeSpan.textContent = 'загрузка...';
+
+            const countSpan = document.createElement('span');
+            countSpan.className = 'proxy-count';
+            countSpan.textContent = `[${proxyLines.length}]`;
+
+            const arrow = document.createElement('span');
+            arrow.className = 'arrow';
+            arrow.textContent = '>';
+
+            rightSpan.appendChild(timeSpan);
+            rightSpan.appendChild(countSpan);
+            rightSpan.appendChild(arrow);
+
+            header.appendChild(leftSpan);
+            header.appendChild(rightSpan);
+
+            // Контент
+            const content = document.createElement('div');
+            content.className = 'accordion-content';
+
+            if (errorMsg) {
+                const errorP = document.createElement('p');
+                errorP.style.color = '#f85149';
+                errorP.style.padding = '10px';
+                errorP.textContent = `Ошибка загрузки: ${errorMsg}`;
+                content.appendChild(errorP);
+            } else if (proxyLines.length === 0) {
+                const emptyP = document.createElement('p');
+                emptyP.style.color = '#8b949e';
+                emptyP.style.padding = '10px';
+                emptyP.textContent = 'Нет доступных прокси.';
+                content.appendChild(emptyP);
+            } else {
+                proxyLines.forEach(line => {
+                    let tgLink = line;
+                    if (line.startsWith('https://t.me/proxy?')) {
+                        tgLink = line.replace('https://t.me/proxy?', 'tg://proxy?');
+                    }
+
+                    let serverName = 'прокси';
+                    try {
+                        const tempUrl = line.startsWith('tg://') 
+                            ? new URL(line.replace('tg://', 'https://t.me/')) 
+                            : new URL(line);
+                        const server = tempUrl.searchParams.get('server');
+                        const port = tempUrl.searchParams.get('port');
+                        if (server) {
+                            serverName = port ? `${server}:${port}` : server;
+                        }
+                    } catch (e) {
+                        console.warn('Не удалось разобрать URL:', line);
+                    }
+
+                    const a = document.createElement('a');
+                    a.href = tgLink;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.className = 'proxy-link';
+                    a.textContent = serverName;
+                    a.title = line;
+                    content.appendChild(a);
+                });
+            }
+
+            accordionDiv.appendChild(header);
+            accordionDiv.appendChild(content);
+            container.appendChild(accordionDiv);
+
+            header.addEventListener('click', function() {
+                this.classList.toggle('active');
+                content.classList.toggle('show');
+            });
+
+            if (!errorMsg) {
+                fetchCommitTimeForSource(source, timeSpan);
+            } else {
+                timeSpan.textContent = 'ошибка';
+            }
+        }
+
+        function loadAllSources() {
+            const statusDiv = document.getElementById('status');
+            const accordionContainer = document.getElementById('accordion-container');
+            const fallbackDiv = document.getElementById('fallback');
+
+            accordionContainer.innerHTML = '';
+            fallbackDiv.style.display = 'none';
+
+            if (sources.length === 0) {
+                statusDiv.innerHTML = 'Нет настроенных источников.';
+                return;
+            }
+
+            statusDiv.innerHTML = `Загрузка ${sources.length} источников...`;
+
+            // Запускаем все загрузки параллельно, сохраняя индекс
+            const promises = sources.map((source, index) => loadSourceProxies(source, index));
+
+            Promise.allSettled(promises).then(results => {
+                // Извлекаем значения из результатов (они уже содержат index, source, proxyLines, error)
+                const loadedResults = results.map(r => r.value || { 
+                    index: -1, 
+                    source: null, 
+                    proxyLines: [], 
+                    error: 'Неизвестная ошибка' 
+                });
+
+                // Сортируем по индексу, чтобы сохранить исходный порядок
+                loadedResults.sort((a, b) => a.index - b.index);
+
+                // Создаём аккордеоны в правильном порядке
+                loadedResults.forEach(item => {
+                    if (item.source) {
+                        createAccordion(item.source, item.proxyLinks, accordionContainer, item.error);
+                    }
+                });
+
+                statusDiv.innerHTML = `Загружено ${sources.length} источников.`;
+            });
+        }
+
+        loadAllSources();
+        setInterval(loadAllSources, 10 * 60 * 1000);
     </script>
 </body>
 </html>
